@@ -1,8 +1,8 @@
 package com.example
 
-import com.lagradost.cloudstream3.MainAPI
-import com.lagradost.cloudstream3.SearchResponse
-import com.lagradost.cloudstream3.TvType
+import com.lagradost.cloudstream3.*
+// import com.lagradost.cloudstream3.SearchResponse
+// import com.lagradost.cloudstream3.TvType
 
 class ExampleProvider : MainAPI() { // All providers must be an instance of MainAPI
     override var mainUrl = "https://animexin.dev/" 
