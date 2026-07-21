@@ -12,10 +12,24 @@ class ExampleProvider : MainAPI() { // All providers must be an instance of Main
     override var lang = "en"
 
     // Enable this when your provider has a main page
-    override val hasMainPage = true
+    override val hasMainPage = false
 
     // This function gets called when you search for something
     override suspend fun search(query: String): List<SearchResponse> {
-        return listOf()
+
+        val document = app.get(mainUrl + "search?keyword=$query").document
+
+        return document.select("div.bs").mapNotNull { element ->
+            val title = element.selectFirst("h2")?.text() ?: return@mapNotNull null
+            val url = element.selectFirst("a")?.attr("href") ?: return@mapNotNull null
+            val posterUrl = element.selectFirst("img")?.attr("src") ?: return@mapNotNull null
+
+            SearchResponse(
+                name = title,
+                url = url,
+                posterUrl = posterUrl
+            )
+
+        }
     }
 }
