@@ -18,18 +18,18 @@ class ExampleProvider : MainAPI() { // All providers must be an instance of Main
     override suspend fun search(query: String): List<SearchResponse> {
         var document = app.get(mainUrl + "search?keyword=$query").document
 
-        return document.select("div.bs").mapNotNull {
-            element ->
+        return document.select("div.bs").mapNotNull { element ->
+
             val title = element.select("h2").text()
+            if (title.isEmpty()) return@mapNotNull null
+
             val href = fixUrl(element.select("a").attr("href"))
+            if (href.isEmpty()) return@mapNotNull null
+
             val posterUrl = fixUrl(element.select("img").attr("src"))
 
-            return newAnimeSearchResponse(
-                name = title,
-                url = href,
-                TvType = TvType.Anime
-            ) {
-                this.poster = posterUrl
+            return newAnimeReponse (title, href, TvType.Anime) {
+                this.posterUrl = posterUrl
             }
         }
     }
