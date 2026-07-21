@@ -4,7 +4,7 @@ dependencies {
 }
 
 // Use an integer for version numbers
-version = 2
+version = 3
 
 cloudstream {
     // All of these properties are optional, you can safely remove any of them.
@@ -21,7 +21,7 @@ cloudstream {
     **/
     status = 1 // Will be 3 if unspecified
 
-    tvTypes = listOf("Movie", "Anime") 
+    tvTypes = listOf("Anime") 
     requiresResources = true
     language = "en"
 
