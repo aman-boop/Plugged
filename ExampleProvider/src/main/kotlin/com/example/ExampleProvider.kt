@@ -18,7 +18,7 @@ class ExampleProvider : MainAPI() { // All providers must be an instance of Main
     override suspend fun search(query: String): List<SearchResponse> {
         var document = app.get(mainUrl + "s?=$query").document
 
-        return document.select("div.bs").mapNotNull { element ->
+        return document.select("article.bs").mapNotNull { element ->
 
             val title = element.select("h2").text()
             if (title.isEmpty()) return@mapNotNull null
