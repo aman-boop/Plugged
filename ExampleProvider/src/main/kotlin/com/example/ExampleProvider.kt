@@ -24,7 +24,7 @@ class ExampleProvider : MainAPI() { // All providers must be an instance of Main
             val href = fixUrl(element.select("a").attr("href"))
             val posterUrl = fixUrl(element.select("img").attr("src"))
 
-            return AnimeSearchResponse(
+            return newAnimeSearchResponse(
                 name = title,
                 url = href,
                 TvType = TvType.Anime
