@@ -34,5 +34,5 @@ class ExampleProvider : MainAPI() { // All providers must be an instance of Main
                 }
             )   
         }.flatten()
-        }
     }
+}
