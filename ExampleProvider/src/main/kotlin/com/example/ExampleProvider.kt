@@ -37,25 +37,41 @@ class ExampleProvider : MainAPI() { // All providers must be an instance of Main
         }.flatten()
     }
 
-    override suspend fun load(url: String): LoadResponse {
-        val document = app.get(url).document
+    override suspend fun load(url: String): LoadResponse? {
+    val document = app.get(url).document
 
-        val title = document.select("h1.entry-title").text()
-        val posterUrl = fixUrl(document.select("img.wp-post-image").attr("src"))
-        val description = document.select("div.entry-content p").text()
+    // 1. Parse basic details from the show's page
+    val title = document.selectFirst("h1.entry-title")?.text()?.trim() ?: return null
+    val poster = fixUrl(document.selectFirst("div.thumb img")?.attr("src"))
+    val description = document.selectFirst("div.entry-content p")?.text()?.trim()
+    val genres = document.select("div.genxrel a").map { it.text() }
+    
+    // Status (e.g., Ongoing, Completed)
+    val status = when (document.selectFirst("div.info-content span")?.text()?.contains("Completed") == true) {
+        true -> TrabalStatus.Completed
+        else -> TrabalStatus.Ongoing
+    }
 
-        return document.select("ul li a").mapNotNull { element ->
-            val episodeTitle = element.text()
-            val episodeUrl = fixUrl(element.attr("href"))
-            newEpisode(episodeTitle, episodeUrl)
+    // 2. Parse episodes list (usually found inside a list/selector on the page)
+    val episodes = document.select("div.episodelist ul li").mapNotNull { element ->
+        val episodeHref = fixUrl(element.select("a").attr("href"))
+        val episodeName = element.select("span.eps").text()
+        // Extract a clean episode number if possible, or leave null to auto-index
+        val episodeNumber = Regex("""\d+""").find(episodeName)?.value?.toIntOrNull()
 
-            listOf(
-                newTvSeriesLoadResponse(title, url, TvType.Anime) {
-                    this.posterUrl = posterUrl
-                    this.description = description
-                    this.episodes = episodes
-                }
-            ).reverse() // Reverse the list so that the latest episode is first
-        }
+        Episode(
+            data = episodeHref,
+            name = episodeName,
+            episode = episodeNumber
+        )
+    }.reversed() // Reverse if the newest episodes are at the top, so it plays in order
+
+    // 3. Return the proper LoadResponse type (e.g., AnimeLoadResponse)
+    return newMovieLoadResponse(title, url, TvType.Anime, episodes) {
+        this.posterUrl = poster
+        this.plot = description
+        this.tags = genres
+        this.showStatus = status
+    }
     }
 }
