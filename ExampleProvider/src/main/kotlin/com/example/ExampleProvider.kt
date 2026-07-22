@@ -36,4 +36,25 @@ class ExampleProvider : MainAPI() { // All providers must be an instance of Main
             )   
         }.flatten()
     }
+
+    override suspend fun load(url: String): LoadResponse {
+        val document = app.get(url).document
+
+        val title = document.select("h1.entry-title").text()
+        val posterUrl = fixUrl(document.select("img.wp-post-image").attr("src"))
+        val description = document.select("div.entry-content p").text()
+
+        val episodes = document.select("ul li a").mapNotNull { element ->
+            val episodeTitle = element.text()
+            val episodeUrl = fixUrl(element.attr("href"))
+            newEpisode(episodeTitle, episodeUrl)
+        }.reverse() // Reverse the list to have the latest episode first
+
+        return newTvSeriesLoadResponse(title, url, TvType.Anime) {
+            this.posterUrl = posterUrl
+            this.description = description
+            this.episodes = episodes
+        }
+    }
+
 }
