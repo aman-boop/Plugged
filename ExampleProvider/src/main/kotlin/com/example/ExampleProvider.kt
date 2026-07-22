@@ -2,6 +2,8 @@ package com.example
 
 import com.lagradost.cloudstream3.*
 import com.lagradost.cloudstream3.utils.*
+import android.util.Base64
+import org.jsoup.Jsoup
 
 class ExampleProvider : MainAPI() { 
     override var mainUrl = "https://animexin.dev/" 
