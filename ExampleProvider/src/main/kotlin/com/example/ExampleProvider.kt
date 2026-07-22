@@ -43,7 +43,7 @@ class ExampleProvider : MainAPI() { // All providers must be an instance of Main
     // 1. Parse basic details from the show's page
     val title = document.selectFirst("h1.entry-title")?.text()?.trim() ?: return null
     // Fallback to empty string if null, since the builder might expect a non-null String
-    val poster = fixUrl(document.selectFirst("div.thumb img")?.attr("src")) ?: ""
+    val poster = fixUrl(document.selectFirst("div.thumb img")?.attr("src")) ?: "https://www.magnific.com/free-photo/image-icon-front-side_41949194.htm#fromView=keyword&page=1&position=0&query=Img+logo"
     val description = document.selectFirst("div.entry-content p")?.text()?.trim()
     val genres = document.select("div.genxrel a").map { it.text() }
     
