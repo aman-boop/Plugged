@@ -1,22 +1,17 @@
 package com.example
 
 import com.lagradost.cloudstream3.*
-// import com.lagradost.cloudstream3.SearchResponse
-// import com.lagradost.cloudstream3.TvType
 
-class ExampleProvider : MainAPI() { // All providers must be an instance of MainAPI
+class ExampleProvider : MainAPI() { 
     override var mainUrl = "https://animexin.dev/" 
     override var name = "animexin"
     override val supportedTypes = setOf(TvType.Anime)
 
     override var lang = "en"
-
-    // Enable this when your provider has a main page
     override val hasMainPage = false
 
-    // This function gets called when you search for something
     override suspend fun search(query: String): List<SearchResponse> {
-        var document = app.get("$mainUrl?s=$query").document
+        val document = app.get("$mainUrl?s=$query").document
 
         return document.select("article.bs").mapNotNull { element ->
 
@@ -38,43 +33,36 @@ class ExampleProvider : MainAPI() { // All providers must be an instance of Main
     }
 
     override suspend fun load(url: String): LoadResponse? {
-    val document = app.get(url).document
+        val document = app.get(url).document
 
-    // 1. Parse basic details from the show's page
-    val title = document.selectFirst("h1.entry-title")?.text()?.trim() ?: return null
-    // Fallback to empty string if null, since the builder might expect a non-null String
-    val poster = fixUrl(document.selectFirst("div.thumb img")?.attr("src")) ?: "https://www.magnific.com/free-photo/image-icon-front-side_41949194.htm#fromView=keyword&page=1&position=0&query=Img+logo"
-    val description = document.selectFirst("div.entry-content p")?.text()?.trim()
-    val genres = document.select("div.genxrel a").map { it.text() }
-    
-    // Status (e.g., Ongoing, Completed) - using ShowStatus instead of TrabalStatus
-    val status = when (document.selectFirst("div.info-content span")?.text()?.contains("Completed") == true) {
-        true -> ShowStatus.Completed
-        else -> ShowStatus.Ongoing
-    }
-
-    // 2. Parse episodes list using the recommended newEpisode method
-    val episodes = document.select("div.episodelist ul li").mapNotNull { element ->
-        val episodeHref = fixUrl(element.select("a").attr("href"))
-        if (episodeHref.isEmpty()) return@mapNotNull null
+        // 1. Parse basic details from the show's page
+        val title = document.selectFirst("h1.entry-title")?.text()?.trim() ?: return null
         
-        val episodeName = element.select("span.eps").text()
-        val episodeNumber = Regex("""\d+""").find(episodeName)?.value?.toIntOrNull()
+        // Fixed: Ensure poster is guaranteed to be a non-null String using an empty string fallback
+        val poster = fixUrl(document.selectFirst("div.thumb img")?.attr("src")) ?: ""
+        
+        val description = document.selectFirst("div.entry-content p")?.text()?.trim()
+        val genres = document.select("div.genxrel a").map { it.text() }
 
-        // Use the official newEpisode builder function instead of the deprecated constructor
-        newEpisode(episodeHref) {
-            this.name = episodeName
-            this.episode = episodeNumber
+        // 2. Parse episodes list using the recommended newEpisode method
+        val episodes = document.select("div.episodelist ul li").mapNotNull { element ->
+            val episodeHref = fixUrl(element.select("a").attr("href"))
+            if (episodeHref.isEmpty()) return@mapNotNull null
+            
+            val episodeName = element.select("span.eps").text()
+            val episodeNumber = Regex("""\d+""").find(episodeName)?.value?.toIntOrNull()
+
+            newEpisode(episodeHref) {
+                this.name = episodeName
+                this.episode = episodeNumber
+            }
+        }.reversed()
+
+        // 3. Return the proper LoadResponse type
+        return newMovieLoadResponse(title, url, TvType.Anime, episodes) {
+            this.posterUrl = poster
+            this.plot = description
+            this.tags = genres
         }
-    }.reversed() // Reverse if the newest episodes are at the top
-
-    // 3. Return the proper LoadResponse type
-    return newMovieLoadResponse(title, url, TvType.Anime, episodes) {
-        this.posterUrl = poster
-        this.plot = description
-        this.tags = genres
-    //  this.showStatus = status // Fixed property name from showStatus to status
     }
-}
-
 }
