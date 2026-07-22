@@ -75,37 +75,46 @@ class ExampleProvider : MainAPI() {
     }
 
     override suspend fun loadLinks(
-    data: String, // This is the 'episodeHref' you passed inside newEpisode
+    data: String,
     isCasting: Boolean,
     subtitleCallback: (SubtitleFile) -> Unit,
     callback: (ExtractorLink) -> Unit
 ): Boolean {
-    
     // 1. Fetch the episode page
     val document = app.get(data).document
 
-    // 2. Find all video player iframes on the page
-    // (You might need to adjust the Jsoup selector depending on the site's layout)
-    val iframes = document.select("iframe").mapNotNull { element ->
-        element.attr("src").takeIf { it.isNotBlank() }
+    // 2. Select all the option tags within the mirror dropdown and grab the 'value'
+    val encodedOptions = document.select("select.mirror option").mapNotNull {
+        it.attr("value").takeIf { value -> value.isNotBlank() }
     }
 
-    // 3. Process each iframe url
-    for (iframeUrl in iframes) {
-        val fixedUrl = fixUrl(iframeUrl)
-        
-        // 4. Let Cloudstream's built-in extractors do the heavy lifting!
-        // It will visit the iframe URL, find the .mp4/.m3u8, and send it to the 'callback'
-        loadExtractor(
-            url = fixedUrl, 
-            referer = data, 
-            subtitleCallback = subtitleCallback, 
-            callback = callback
-        )
+    // 3. Process each Base64 string
+    for (encodedString in encodedOptions) {
+        try {
+            // Decode the Base64 string into plain text (HTML)
+            val decodedHtml = String(Base64.decode(encodedString, Base64.DEFAULT))
+
+            // The decoded text is an HTML snippet like: <iframe src="https://..."></iframe>
+            // We use Jsoup to parse just this tiny snippet and pull out the "src" URL
+            val iframeDocument = Jsoup.parse(decodedHtml)
+            val iframeUrl = iframeDocument.select("iframe").attr("src")
+
+            if (iframeUrl.isNotBlank()) {
+                // 4. Send the extracted URL to Cloudstream's built-in extractors
+                loadExtractor(
+                    url = fixUrl(iframeUrl),
+                    referer = data,
+                    subtitleCallback = subtitleCallback,
+                    callback = callback
+                )
+            }
+        } catch (e: Exception) {
+            // If one server fails to decode, skip it and continue to the next one
+            e.printStackTrace()
+        }
     }
 
-    // Return true to tell Cloudstream the scraping process finished successfully
-    return true 
+    return true
     }
     
 }
