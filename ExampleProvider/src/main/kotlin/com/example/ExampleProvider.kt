@@ -53,7 +53,7 @@ class ExampleProvider : MainAPI() {
             if (episodeHref.isEmpty()) return@mapNotNull null
             
             val episodeName = element.select("div.epl-title").text().trim()
-            val episodeNumber = Regex("""\d+""").find(episodeName)?.value?.toIntOrNull()
+            val episodeNumber = element.select("div.epl-num").text().toIntOrNull
 
             newEpisode(episodeHref) {
                 this.name = episodeName
