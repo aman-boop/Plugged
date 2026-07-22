@@ -42,36 +42,39 @@ class ExampleProvider : MainAPI() { // All providers must be an instance of Main
 
     // 1. Parse basic details from the show's page
     val title = document.selectFirst("h1.entry-title")?.text()?.trim() ?: return null
-    val poster = fixUrl(document.selectFirst("div.thumb img")?.attr("src"))
+    // Fallback to empty string if null, since the builder might expect a non-null String
+    val poster = fixUrl(document.selectFirst("div.thumb img")?.attr("src")) ?: ""
     val description = document.selectFirst("div.entry-content p")?.text()?.trim()
     val genres = document.select("div.genxrel a").map { it.text() }
     
-    // Status (e.g., Ongoing, Completed)
+    // Status (e.g., Ongoing, Completed) - using ShowStatus instead of TrabalStatus
     val status = when (document.selectFirst("div.info-content span")?.text()?.contains("Completed") == true) {
-        true -> TrabalStatus.Completed
-        else -> TrabalStatus.Ongoing
+        true -> ShowStatus.Completed
+        else -> ShowStatus.Ongoing
     }
 
-    // 2. Parse episodes list (usually found inside a list/selector on the page)
+    // 2. Parse episodes list using the recommended newEpisode method
     val episodes = document.select("div.episodelist ul li").mapNotNull { element ->
         val episodeHref = fixUrl(element.select("a").attr("href"))
+        if (episodeHref.isEmpty()) return@mapNotNull null
+        
         val episodeName = element.select("span.eps").text()
-        // Extract a clean episode number if possible, or leave null to auto-index
         val episodeNumber = Regex("""\d+""").find(episodeName)?.value?.toIntOrNull()
 
-        Episode(
-            data = episodeHref,
-            name = episodeName,
-            episode = episodeNumber
-        )
-    }.reversed() // Reverse if the newest episodes are at the top, so it plays in order
+        // Use the official newEpisode builder function instead of the deprecated constructor
+        newEpisode(episodeHref) {
+            this.name = episodeName
+            this.episode = episodeNumber
+        }
+    }.reversed() // Reverse if the newest episodes are at the top
 
-    // 3. Return the proper LoadResponse type (e.g., AnimeLoadResponse)
+    // 3. Return the proper LoadResponse type
     return newMovieLoadResponse(title, url, TvType.Anime, episodes) {
         this.posterUrl = poster
         this.plot = description
         this.tags = genres
-        this.showStatus = status
+        this.status = status // Fixed property name from showStatus to status
     }
-    }
+}
+
 }
