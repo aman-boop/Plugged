@@ -59,7 +59,7 @@ class ExampleProvider : MainAPI() {
         }.reversed()
 
         // 3. Return the proper LoadResponse type
-        return newTvSeriesSearchResponse(title, url, TvType.Anime, episodes) {
+        return newTvSeriesLoadResponse(title, url, TvType.Anime, episodes) {
             this.posterUrl = poster
             this.plot = description
             this.tags = genres
