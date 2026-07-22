@@ -72,4 +72,39 @@ class ExampleProvider : MainAPI() {
             // you can use: this.episodes[DubStatus.Subbed] = episodes
         }
     }
+
+    override suspend fun loadLinks(
+    data: String, // This is the 'episodeHref' you passed inside newEpisode
+    isCasting: Boolean,
+    subtitleCallback: (SubtitleFile) -> Unit,
+    callback: (ExtractorLink) -> Unit
+): Boolean {
+    
+    // 1. Fetch the episode page
+    val document = app.get(data).document
+
+    // 2. Find all video player iframes on the page
+    // (You might need to adjust the Jsoup selector depending on the site's layout)
+    val iframes = document.select("iframe").mapNotNull { element ->
+        element.attr("src").takeIf { it.isNotBlank() }
+    }
+
+    // 3. Process each iframe url
+    for (iframeUrl in iframes) {
+        val fixedUrl = fixUrl(iframeUrl)
+        
+        // 4. Let Cloudstream's built-in extractors do the heavy lifting!
+        // It will visit the iframe URL, find the .mp4/.m3u8, and send it to the 'callback'
+        loadExtractor(
+            url = fixedUrl, 
+            referer = data, 
+            subtitleCallback = subtitleCallback, 
+            callback = callback
+        )
+    }
+
+    // Return true to tell Cloudstream the scraping process finished successfully
+    return true 
+    }
+    
 }
