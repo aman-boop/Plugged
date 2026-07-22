@@ -1,6 +1,7 @@
 package com.example
 
 import com.lagradost.cloudstream3.*
+import com.lagradost.cloudstream3.utils.*
 
 class ExampleProvider : MainAPI() { 
     override var mainUrl = "https://animexin.dev/" 
